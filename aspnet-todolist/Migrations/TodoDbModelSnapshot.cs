@@ -17,60 +17,65 @@ namespace aspnet_todolist.Migrations
             modelBuilder.HasAnnotation("ProductVersion", "10.0.3");
 
             modelBuilder.Entity("aspnet_todolist.Models.Category", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
 
-                    b.Property<string>("Color")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                b.Property<string>("Color")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasColumnType("TEXT");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.ToTable("Categories");
-                });
-
-            modelBuilder.Entity("aspnet_todolist.Models.Todo", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("CategoryId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsComplete")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CategoryId");
-
-                    b.ToTable("Todos");
-                });
+                b.ToTable("Categories");
+            });
 
             modelBuilder.Entity("aspnet_todolist.Models.Todo", b =>
-                {
-                    b.HasOne("aspnet_todolist.Models.Category", "Category")
-                        .WithMany()
-                        .HasForeignKey("CategoryId");
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
 
-                    b.Navigation("Category");
-                });
+                b.Property<int?>("CategoryId")
+                    .HasColumnType("INTEGER");
+
+                b.Property<bool>("IsComplete")
+                    .HasColumnType("INTEGER");
+
+                b.Property<bool>("IsDeleted")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Id");
+
+                b.HasIndex("CategoryId");
+
+                b.ToTable("Todos");
+            });
+
+            modelBuilder.Entity("aspnet_todolist.Models.Todo", b =>
+            {
+                b.HasOne("aspnet_todolist.Models.Category", "Category")
+                    .WithMany("Todos")
+                    .HasForeignKey("CategoryId");
+
+                b.Navigation("Category");
+            });
+
+            modelBuilder.Entity("aspnet_todolist.Models.Category", b =>
+            {
+                b.Navigation("Todos");
+            });
 #pragma warning restore 612, 618
         }
     }

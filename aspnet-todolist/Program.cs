@@ -10,7 +10,7 @@ namespace aspnet_todolist
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -30,16 +30,17 @@ namespace aspnet_todolist
                                        Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.ResponsePropertiesAndHeaders;
             });
 
-            builder.Services.AddDbContext<TodoDb>(opt => 
+            builder.Services.AddDbContext<TodoDb>(opt =>
                 opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-            builder.Services.AddTransient<DataSeeder>();
             builder.Services.AddScoped<ITodoService, TodoService>();
             builder.Services.AddScoped<ICategoryService, CategoryService>();
 
             builder.Services.AddOpenApi();
             builder.Services.AddValidation();
+
+            builder.Services.AddAutoMapper(typeof(Program));
 
             var app = builder.Build();
 
@@ -47,6 +48,11 @@ namespace aspnet_todolist
             {
                 var db = scope.ServiceProvider.GetRequiredService<TodoDb>();
                 db.Database.Migrate();
+
+                if (app.Environment.IsDevelopment())
+                {
+                    await DataSeeder.SeedAsync(db);
+                }
             }
 
             app.UseHttpLogging();
@@ -268,35 +274,19 @@ namespace aspnet_todolist
                 /// </summary>
                 /// <returns>A summary of seeded data.</returns>
                 /// <response code="200">Returns the count of seeded items.</response>
-                app.MapPost("/seed", async (TodoDb db, DataSeeder seeder) =>
+                app.MapPost("/seed", async (TodoDb db) =>
                 {
                     db.Todos.RemoveRange(db.Todos);
                     db.Categories.RemoveRange(db.Categories);
                     await db.SaveChangesAsync();
 
-                    var categories = new List<Category>();
-                    for (int i = 0; i < 20; i++)
-                    {
-                        var category = seeder.GenerateCategory();
-                        categories.Add(category);
-                        db.Categories.Add(category);
-                    }
-                    await db.SaveChangesAsync();
-
-                    var todos = new List<Todo>();
-                    for (int i = 0; i < 500; i++)
-                    {
-                        var todo = seeder.GenerateTodo();
-                        todos.Add(todo);
-                        db.Todos.Add(todo);
-                    }
-                    await db.SaveChangesAsync();
+                    (var categoriesCount, var todosCount) = await DataSeeder.SeedAsync(db);
 
                     return Results.Ok(new
                     {
                         message = "Database reset and reseeded successfully",
-                        categoriesCreated = categories.Count,
-                        todosCreated = todos.Count
+                        categoriesCreated = categoriesCount,
+                        todosCreated = todosCount,
                     });
                 })
                 .WithTags("Development")

@@ -1,5 +1,6 @@
 ﻿using aspnet_todolist.DTOs;
 using aspnet_todolist.Models;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 
 namespace aspnet_todolist.Services
@@ -7,10 +8,12 @@ namespace aspnet_todolist.Services
     public class TodoService : ITodoService
     {
         private readonly TodoDb _db;
+        private readonly IMapper _mapper;
 
-        public TodoService(TodoDb db)
+        public TodoService(TodoDb db, IMapper mapper)
         {
             _db = db;
+            _mapper = mapper;
         }
 
         public async Task<object> GetAllAsync(
@@ -57,7 +60,7 @@ namespace aspnet_todolist.Services
 
                 var result = new PagedResult<TodoResponseDto>
                 {
-                    Items = items.Select(MapToDto),
+                    Items = _mapper.Map<List<TodoResponseDto>>(items),
                     TotalCount = totalCount,
                     CurrentPage = (int)page,
                     PageSize = pageSize
@@ -67,7 +70,7 @@ namespace aspnet_todolist.Services
             }
 
             var todos = await query.ToListAsync();
-            return todos.Select(MapToDto).ToList();
+            return _mapper.Map<List<TodoResponseDto>>(todos);
         }
 
         public async Task<TodoResponseDto?> GetByIdAsync(int id)
@@ -76,7 +79,7 @@ namespace aspnet_todolist.Services
             if (todo == null) return null;
             if (todo.IsDeleted == true) return null;
 
-            return MapToDto(todo);
+            return _mapper.Map<TodoResponseDto>(todo);
         }
 
         public async Task<TodoResponseDto> CreateAsync(TodoCreateDto todoDto)
@@ -97,7 +100,7 @@ namespace aspnet_todolist.Services
 
             await _db.Entry(todo).Reference(t => t.Category).LoadAsync();
 
-            return MapToDto(todo);
+            return _mapper.Map<TodoResponseDto>(todo);
         }
 
         public async Task<TodoResponseDto?> UpdateAsync(int id, TodoUpdateDto todoDto)
@@ -124,7 +127,7 @@ namespace aspnet_todolist.Services
                 await _db.Entry(todo).Reference(t => t.Category).LoadAsync();
             }
 
-            return MapToDto(todo);
+            return _mapper.Map<TodoResponseDto>(todo);
         }
 
         public async Task<bool> DeleteAsync(int id, bool hardDelete = false)
@@ -141,19 +144,6 @@ namespace aspnet_todolist.Services
 
             await _db.SaveChangesAsync();
             return true;
-        }
-
-        private static TodoResponseDto MapToDto(Todo todo)
-        {
-            return new TodoResponseDto(
-                todo.Id,
-                todo.Name!,
-                todo.IsComplete,
-                todo.Category != null ? new CategoryResponseDto(
-                    todo.Category.Id,
-                    todo.Category.Name!,
-                    todo.Category.Color!) : null
-            );
         }
     }
 }

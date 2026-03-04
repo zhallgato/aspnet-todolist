@@ -1,42 +1,41 @@
 ﻿using aspnet_todolist.Models;
 using Bogus;
+using Microsoft.EntityFrameworkCore;
 
 namespace aspnet_todolist.Services
 {
-    public class DataSeeder
+    public static class DataSeeder
     {
-        Faker<Category> categoryModelFake;
-        Faker<Todo> todoModelFake;
-        private readonly TodoDb _db;
-
-        public DataSeeder(TodoDb db)
+        public async static Task<(int categoriesCount, int todosCount)> SeedAsync(TodoDb db)
         {
-            _db = db;
+            if (await db.Todos.AnyAsync())
+                return (0, 0);
+
             Randomizer.Seed = new Random();
             Random random = new();
 
-            categoryModelFake = new Faker<Category>()
+            var categoryFaker = new Faker<Category>()
                 .RuleFor(u => u.Name, f => f.Lorem.Word())
                 .RuleFor(u => u.Color, f => String.Format("#{0:X6}", random.Next(0x1000000)));
 
-            todoModelFake = new Faker<Todo>()
-                .RuleFor(u => u.Name, f => f.Lorem.Word())
-                .RuleFor(u => u.IsComplete, f => f.Random.Bool())
+            var categories = categoryFaker.Generate(20);
+            await db.Categories.AddRangeAsync(categories);
+            await db.SaveChangesAsync();
+
+            var todoFaker = new Faker<Todo>()
+                .RuleFor(t => t.Name, f => f.Lorem.Word())
+                .RuleFor(t => t.IsComplete, f => f.Random.Bool())
                 .RuleFor(u => u.CategoryId, f =>
                 {
-                    var categoryIds = _db.Categories.Select(c => c.Id).ToList();
+                    var categoryIds = db.Categories.Select(c => c.Id).ToList();
                     return categoryIds.Count > 0 ? f.PickRandom(categoryIds) : (int?)null;
                 });
-        }
 
-        public Category GenerateCategory()
-        {
-            return categoryModelFake.Generate();
-        }
+            var todos = todoFaker.Generate(500);
+            await db.Todos.AddRangeAsync(todos);
+            await db.SaveChangesAsync();
 
-        public Todo GenerateTodo()
-        {
-            return todoModelFake.Generate();
+            return (categories.Count, todos.Count);
         }
     }
 }
