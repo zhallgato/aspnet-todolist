@@ -66,10 +66,15 @@ namespace aspnet_todolist.Migrations
             modelBuilder.Entity("aspnet_todolist.Models.Todo", b =>
                 {
                     b.HasOne("aspnet_todolist.Models.Category", "Category")
-                        .WithMany()
+                        .WithMany("Todos")
                         .HasForeignKey("CategoryId");
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("aspnet_todolist.Models.Category", b =>
+                {
+                    b.Navigation("Todos");
                 });
 #pragma warning restore 612, 618
         }
